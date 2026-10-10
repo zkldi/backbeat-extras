@@ -1,0 +1,16 @@
+**
+!.dockerignore
+!Cargo.toml
+!Cargo.lock
+!rust-toolchain.toml
+!docker/
+!docker/Dockerfile.backbeat-cli
+!rust/
+!rust/*/
+!rust/*/Cargo.toml
+!rust/*/src/
+!rust/*/src/**/
+!rust/*/src/**/*.rs
+!rust/backbeat_inspector/README.md
+!rust/*/src-tauri/
+!rust/*/src-tauri/Cargo.toml

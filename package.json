@@ -1,0 +1,22 @@
+{
+	"name": "zks-backbeat-packager",
+	"private": true,
+	"version": "0.1.0",
+	"type": "module",
+	"license": "GPL-3.0-only",
+	"workspaces": [
+		"rust/*"
+	],
+	"scripts": {
+		"dev": "bun run --cwd rust/backbeat_packager_app dev",
+		"build": "bun run --cwd rust/backbeat_packager_app build",
+		"preview": "bun run --cwd rust/backbeat_packager_app preview",
+		"tauri": "bun run --cwd rust/backbeat_packager_app tauri",
+		"typecheck": "bun run --cwd rust/backbeat_packager_app typecheck",
+		"lint": "bun run --cwd rust/backbeat_packager_app lint"
+	},
+	"engines": {
+		"bun": ">=1.2.0"
+	},
+	"packageManager": "bun@1.4.0"
+}
