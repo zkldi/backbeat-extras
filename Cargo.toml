@@ -52,14 +52,14 @@ backbeat_sdk = "1.0.0"
 backbeat_store_config = "1.0.0"
 
 # Extra backbeat stuff - apps and other extra integrations.
-backbeat_inspector = { version = "1.0.0", path = "rust/backbeat_inspector" }
-backbeat_packager = { version = "1.0.0", path = "rust/backbeat_packager" }
+backbeat_inspector = { version = "1.0.1", path = "rust/backbeat_inspector" }
+backbeat_packager = { version = "1.0.1", path = "rust/backbeat_packager" }
 backbeat_vf_config = { path = "rust/backbeat_vf_config" }
 backbeat_vf_fs = { path = "rust/backbeat_vf_fs" }
 backbeat_vf_mountd = { path = "rust/backbeat_vf_mountd" }
 backbeat_vf_fuse = { path = "rust/backbeat_vf_fuse" }
 backbeat_vf_winfsp = { path = "rust/backbeat_vf_winfsp" }
-backbeat_server = { version = "1.0.0", path = "rust/backbeat_server" }
+backbeat_server = { version = "1.0.1", path = "rust/backbeat_server" }
 
 # Other small packages.
 rg_formats = { version = "0.2.0", path = "rust/rg_formats" }

@@ -288,7 +288,7 @@ dependencies = [
 
 [[package]]
 name = "backbeat_packager"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "backbeat_core",
  "backbeat_inspector",
@@ -336,7 +336,7 @@ dependencies = [
 
 [[package]]
 name = "backbeat_server"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "axum",
  "backbeat_core",
