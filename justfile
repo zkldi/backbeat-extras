@@ -39,7 +39,7 @@ test-typescript FILTER="*":
 	output="$(bun run --filter '{{FILTER}}' test -- --reporter=default 2>&1)"
 	status=$?
 	set -e
-	if [ "$status" -ne 0 ] && [[ "$output" == *"No packages matched the filter"* ]]; then
+	if [ "$status" -ne 0 ] && [[ "$output" == *"No packages matched the filter"* || "$output" == *"No workspace packages matched the filter"* ]]; then
 		echo "No workspace packages define test yet."
 		exit 0
 	fi
