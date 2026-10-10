@@ -15,9 +15,9 @@ build-dmg:
 	bun run --cwd rust/backbeat_packager_app tauri build --ci --bundles dmg -- --locked
 
 check:
-	bun run typecheck
-	bun run lint
-	bun run build
+	bun run --filter '*' typecheck
+	bun run --filter '*' lint
+	bun run --filter '*' build
 	cargo fmt --all -- --check
 	cargo clippy --locked --all-targets -- -D warnings
 

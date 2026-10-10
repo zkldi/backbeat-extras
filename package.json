@@ -4,6 +4,7 @@
 	"private": true,
 	"description": "Backbeat monorepo",
 	"workspaces": [
+		"typescript/*",
 		"rust/backbeat_vf_app",
 		"rust/backbeat_packager_app"
 	],
