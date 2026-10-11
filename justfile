@@ -1,4 +1,6 @@
-alias app-packager := pkg-gui
+[private]
+interactive:
+	-@just --choose
 
 # Run the native desktop app.
 pkg-gui:

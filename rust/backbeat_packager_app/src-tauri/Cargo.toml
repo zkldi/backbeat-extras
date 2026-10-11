@@ -1,6 +1,6 @@
 [package]
 name = "zk-backbeat-packager"
-version = "0.1.0"
+version = "1.0.2"
 edition.workspace = true
 authors = ["zkldi <zkldi@proton.me>"]
 description = "zk's desktop packager for converting rhythm game charts into Backbeat archives"
