@@ -6,6 +6,8 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use walkdir::WalkDir;
 
+static IMPORT_LOCK: Mutex<()> = Mutex::new(());
+
 #[derive(Clone, Default)]
 pub(crate) struct BatchState {
 	cache: SeenCache,
@@ -92,6 +94,9 @@ pub(crate) fn import_chart(
 ) -> Result<Packaged, String> {
 	let (packages, missing) = package_for_batch(path, &batch.cache)?;
 	let chart_dir = path.parent().unwrap_or_else(|| Path::new("."));
+	let _import_guard = IMPORT_LOCK
+		.lock()
+		.map_err(|_| "Store import lock poisoned".to_string())?;
 
 	// Import assets first so a failed asset read does not publish a new bundle.
 	for package in &packages {
@@ -344,9 +349,9 @@ mod tests {
 		let dir = tempfile::tempdir().unwrap();
 		let source = dir.path().join("source");
 		fs::create_dir(&source).unwrap();
-		let paths: Vec<_> = ["first", "second"]
-			.into_iter()
-			.map(|name| {
+		let paths: Vec<_> = (0..32)
+			.map(|index| {
+				let name = format!("song-{index}");
 				let path = source.join(format!("{name}.sm"));
 				fs::write(
 					&path,
@@ -384,7 +389,7 @@ mod tests {
 				assert_eq!(handle.join().unwrap().charts, 1);
 			}
 		});
-		assert_eq!(store.stats().unwrap().charts, 2);
+		assert_eq!(store.stats().unwrap().charts, paths.len() as u64);
 		assert_eq!(store.stats().unwrap().asset_count, 1);
 		assert_eq!(batch.imported_assets.lock().unwrap().len(), 1);
 	}

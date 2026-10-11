@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 
 use anyhow::Context as _;
 use backbeat_core::{AssetId, Sha256};
@@ -8,6 +9,8 @@ use clap::Args;
 use futures::StreamExt as _;
 
 use crate::{fmt, store_util, style};
+
+static IMPORT_LOCK: Mutex<()> = Mutex::new(());
 
 /// Convert a source chart and import it and its assets into the store.
 #[derive(Debug, Args)]
@@ -151,6 +154,9 @@ impl ConvertAndImportCommand {
 	fn convert_chart(store: &Backbeat, path: &Path, cache: &SeenCache) -> anyhow::Result<()> {
 		let chart_dir = path.parent().unwrap_or(Path::new("."));
 		let bundles = backbeat_packager::package_with_cache(path, cache)?;
+		let _import_guard = IMPORT_LOCK
+			.lock()
+			.map_err(|_| anyhow::anyhow!("store import lock poisoned"))?;
 
 		if let Some(bundle) = bundles.first() {
 			for (filename, &asset_id) in &bundle.assets {
