@@ -1,9 +1,6 @@
 //! Parser for the `.bmson` file format.
 //!
-//! BMSON is a JSON-based rhythm game chart format (version 1.0.0). Unlike BMS,
-//! one `.bmson` file represents exactly one chart (no fracturing needed).
-//! Sound assets are referenced via `sound_channels[*].name` with slicing
-//! semantics; BGA images/videos live in `bga.bga_header[*].name`.
+//! BMSON is a JSON-based rhythm game chart format for bms.
 //!
 //! # Usage
 //!
@@ -284,6 +281,9 @@ pub enum LoadError {
 
 /// Parse a BMSON file from its raw bytes.
 pub fn from_bytes(bytes: &[u8]) -> Result<Bmson, LoadError> {
+	// did you know that bmson isn't valid json
+	// go fuck yourself
+	let bytes = bytes.strip_prefix(b"\xEF\xBB\xBF").unwrap_or(bytes);
 	Ok(serde_json::from_slice(bytes)?)
 }
 
@@ -315,6 +315,13 @@ mod tests {
 		assert_eq!(b.info.title, "Test");
 		assert_eq!(b.info.artist, "Artist");
 		assert!((b.info.init_bpm - 120.0).abs() < f64::EPSILON);
+	}
+
+	#[test]
+	fn parses_bmson_with_utf8_bom() {
+		let bytes = [b"\xEF\xBB\xBF".as_slice(), minimal_bmson("").as_bytes()].concat();
+		let b: Bmson = from_bytes(&bytes).unwrap();
+		assert_eq!(b.info.title, "Test");
 	}
 
 	#[test]
