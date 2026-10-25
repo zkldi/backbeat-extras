@@ -16,8 +16,12 @@ pub enum SscPackageError {
 	#[error(transparent)]
 	FromFile(#[from] crate::error::FromFileError),
 
-	#[error("SSC file is not valid UTF-8: {0}")]
-	InvalidFileUtf8(#[from] std::str::Utf8Error),
+	#[error("SSC asset path in #{tag} is not valid UTF-8: {source}")]
+	InvalidAssetPathUtf8 {
+		tag: &'static str,
+		#[source]
+		source: std::str::Utf8Error,
+	},
 
 	#[error("could not build BackbeatFile: {0}")]
 	Build(#[from] BackbeatFileError),
@@ -33,7 +37,6 @@ pub(crate) fn resolve_assets(
 ) -> Result<(), SscPackageError> {
 	let chart_dir = ssc_path.parent().unwrap_or(Path::new("."));
 	let bytes = bb.chart.decompress();
-	std::str::from_utf8(&bytes)?;
 	let msd = sm_msd::from_bytes(&bytes);
 	let elements = msd.elements;
 
@@ -54,29 +57,50 @@ fn resolve_msd_assets(
 	chart_stream: &[MsdElement],
 	cache: &SeenCache,
 ) -> Result<(), SscPackageError> {
-	for tag in &[
-		b"MUSIC".as_ref(),
-		b"BANNER",
-		b"BACKGROUND",
-		b"CDTITLE",
-		b"LYRICSPATH",
+	for (real_tag, fallback_tag) in [
+		("REALMUSIC", "MUSIC"),
+		("REALBANNER", "BANNER"),
+		("REALBACKGROUND", "BACKGROUND"),
+		("REALJACKET", "JACKET"),
+		("REALCDTITLE", "CDTITLE"),
 	] {
-		if let Some(path) = get_tag_value(song_elements, tag) {
-			let path = std::str::from_utf8(path)?;
-			ensure_asset(bb, chart_dir, cache, path, &[])?;
-		}
+		let selected = get_tag_value(song_elements, real_tag.as_bytes())
+			.map(|path| (real_tag, path))
+			.or_else(|| {
+				get_tag_value(song_elements, fallback_tag.as_bytes())
+					.map(|path| (fallback_tag, path))
+			});
+		let Some((tag, path)) = selected else {
+			continue;
+		};
+		let path = utf8_asset_path(tag, path)?;
+		ensure_asset(bb, chart_dir, cache, path, &[])?;
 	}
 
-	for el in chart_stream {
-		if &*el.tag == b"MUSIC"
-			&& let Some(val) = el.values.first()
-		{
-			let path = std::str::from_utf8(val)?;
-			ensure_asset(bb, chart_dir, cache, path, &[])?;
+	if let Some(path) = get_tag_value(song_elements, b"LYRICSPATH") {
+		let path = utf8_asset_path("LYRICSPATH", path)?;
+		ensure_asset(bb, chart_dir, cache, path, &[])?;
+	}
+
+	// A song-level REALMUSIC is the enriched, definitive resolution. Only inspect
+	// per-chart legacy MUSIC tags when enrichment did not provide one.
+	if get_tag_value(song_elements, b"REALMUSIC").is_none() {
+		for el in chart_stream {
+			if &*el.tag == b"MUSIC"
+				&& let Some(val) = el.values.first()
+			{
+				let path = utf8_asset_path("MUSIC", val)?;
+				ensure_asset(bb, chart_dir, cache, path, &[])?;
+			}
 		}
 	}
 
 	Ok(())
+}
+
+fn utf8_asset_path<'a>(tag: &'static str, path: &'a [u8]) -> Result<&'a str, SscPackageError> {
+	std::str::from_utf8(path)
+		.map_err(|source| SscPackageError::InvalidAssetPathUtf8 { tag, source })
 }
 
 fn get_tag_value<'a>(elements: &'a [MsdElement], tag: &[u8]) -> Option<&'a [u8]> {
@@ -136,14 +160,35 @@ mod tests {
 	}
 
 	#[test]
-	fn rejects_non_unicode_files() {
-		let raw = b"#TITLE:\x80;\n#MUSIC:song.ogg;\n";
+	fn accepts_non_utf8_outside_selected_asset_paths() {
+		let raw = b"#TITLE:\x80;\n#MUSIC:\x80.ogg;\n#REALMUSIC:song.ogg;\n#NOTEDATA:;\n#MUSIC:\x81.ogg;\n";
+		let chart_path = Path::new("test.ssc");
+		let cache = no_cache();
+		let mut bb = crate::base::from_bytes(raw, chart_path, &cache).unwrap();
+
+		resolve_assets(&mut bb, chart_path, &cache).unwrap();
+
+		assert_eq!(
+			cache.missing_asset_paths(),
+			vec![backbeat_core::AssetPath::from_path("song.ogg").unwrap()]
+		);
+	}
+
+	#[test]
+	fn rejects_non_utf8_real_asset_paths() {
+		let raw = b"#MUSIC:song.ogg;\n#REALMUSIC:\x80.ogg;\n";
 		let chart_path = Path::new("test.ssc");
 		let cache = no_cache();
 		let mut bb = crate::base::from_bytes(raw, chart_path, &cache).unwrap();
 
 		let error = resolve_assets(&mut bb, chart_path, &cache).unwrap_err();
 
-		assert!(matches!(error, SscPackageError::InvalidFileUtf8(_)));
+		assert!(matches!(
+			error,
+			SscPackageError::InvalidAssetPathUtf8 {
+				tag: "REALMUSIC",
+				..
+			}
+		));
 	}
 }

@@ -305,6 +305,26 @@ mod tests {
 	}
 
 	#[test]
+	fn package_uses_utf8_real_tags_when_legacy_ssc_paths_are_not_utf8() {
+		let tmp = TempDir::new().unwrap();
+		let path = tmp.path().join("song.ssc");
+		fs::write(tmp.path().join("song.ogg"), b"audio").unwrap();
+		fs::write(
+			&path,
+			b"#TITLE:\x80;\n#MUSIC:\x80.ogg;\n#REALMUSIC:song.ogg;\n#NOTEDATA:;\n#STEPSTYPE:dance-single;\n#DIFFICULTY:Hard;\n#METER:9;\n#NOTES:\n0000\n;\n",
+		)
+		.unwrap();
+
+		let packages = package(&path).unwrap();
+		assert_eq!(packages.len(), 1);
+		assert!(
+			packages[0]
+				.assets
+				.contains_key(&AssetPath::from_path("song.ogg").unwrap())
+		);
+	}
+
+	#[test]
 	fn package_fractures_dwi_charts() {
 		let tmp = TempDir::new().unwrap();
 		let path = tmp.path().join("song.dwi");
@@ -320,6 +340,26 @@ mod tests {
 			assert_eq!(package.filename.as_str(), "song.dwi");
 			assert!(backbeat_inspector::inspect_bundle(&package).is_ok());
 		}
+	}
+
+	#[test]
+	fn package_uses_utf8_real_tags_when_legacy_dwi_paths_are_not_utf8() {
+		let tmp = TempDir::new().unwrap();
+		let path = tmp.path().join("song.dwi");
+		fs::write(tmp.path().join("song.ogg"), b"audio").unwrap();
+		fs::write(
+			&path,
+			b"#TITLE:\x80;\n#FILE:\x80.ogg;\n#REALMUSIC:song.ogg;\n#SINGLE:BASIC:3:44;\n",
+		)
+		.unwrap();
+
+		let packages = package(&path).unwrap();
+		assert_eq!(packages.len(), 1);
+		assert!(
+			packages[0]
+				.assets
+				.contains_key(&AssetPath::from_path("song.ogg").unwrap())
+		);
 	}
 
 	#[test]
