@@ -259,6 +259,26 @@ mod tests {
 	}
 
 	#[test]
+	fn package_uses_utf8_real_tags_when_legacy_sm_paths_are_not_utf8() {
+		let tmp = TempDir::new().unwrap();
+		let path = tmp.path().join("song.sm");
+		fs::write(tmp.path().join("song.ogg"), b"audio").unwrap();
+		fs::write(
+			&path,
+			b"#TITLE:\x80;\n#MUSIC:\x80.ogg;\n#REALMUSIC:song.ogg;\n#NOTES:dance-single:A:Hard:9:0:0000;\n",
+		)
+		.unwrap();
+
+		let packages = package(&path).unwrap();
+		assert_eq!(packages.len(), 1);
+		assert!(
+			packages[0]
+				.assets
+				.contains_key(&AssetPath::from_path("song.ogg").unwrap())
+		);
+	}
+
+	#[test]
 	fn package_fractures_ssc_charts() {
 		let tmp = TempDir::new().unwrap();
 		let path = tmp.path().join("song.ssc");

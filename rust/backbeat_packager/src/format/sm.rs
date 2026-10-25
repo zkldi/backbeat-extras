@@ -16,8 +16,12 @@ pub enum SmPackageError {
 	#[error(transparent)]
 	FromFile(#[from] crate::error::FromFileError),
 
-	#[error("SM file is not valid UTF-8: {0}")]
-	InvalidFileUtf8(#[from] std::str::Utf8Error),
+	#[error("SM asset path in #{tag} is not valid UTF-8: {source}")]
+	InvalidAssetPathUtf8 {
+		tag: &'static str,
+		#[source]
+		source: std::str::Utf8Error,
+	},
 
 	#[error("could not build BackbeatFile: {0}")]
 	Build(#[from] BackbeatFileError),
@@ -33,7 +37,6 @@ pub(crate) fn resolve_assets(
 ) -> Result<(), SmPackageError> {
 	let chart_dir = sm_path.parent().unwrap_or(Path::new("."));
 	let bytes = bb.chart.decompress();
-	std::str::from_utf8(&bytes)?;
 	let msd = sm_msd::from_bytes(&bytes);
 	let header_elements: Vec<MsdElement> = msd
 		.elements
@@ -51,19 +54,36 @@ fn resolve_header_assets(
 	header: &[MsdElement],
 	cache: &SeenCache,
 ) -> Result<(), SmPackageError> {
-	for tag in &[
-		b"MUSIC".as_ref(),
-		b"BANNER",
-		b"BACKGROUND",
-		b"CDTITLE",
-		b"LYRICSPATH",
+	for (real_tag, fallback_tag) in [
+		("REALMUSIC", "MUSIC"),
+		("REALBANNER", "BANNER"),
+		("REALBACKGROUND", "BACKGROUND"),
+		("REALJACKET", "JACKET"),
+		("REALCDTITLE", "CDTITLE"),
 	] {
-		let Some(rel_path) = get_tag_value(header, tag) else {
+		let selected = get_tag_value(header, real_tag.as_bytes())
+			.map(|path| (real_tag, path))
+			.or_else(|| {
+				get_tag_value(header, fallback_tag.as_bytes()).map(|path| (fallback_tag, path))
+			});
+		let Some((tag, rel_path)) = selected else {
 			continue;
 		};
-		let rel_path = std::str::from_utf8(rel_path)?;
+		let rel_path = std::str::from_utf8(rel_path)
+			.map_err(|source| SmPackageError::InvalidAssetPathUtf8 { tag, source })?;
 		ensure_asset(bb, chart_dir, cache, rel_path, &[])?;
 	}
+
+	if let Some(rel_path) = get_tag_value(header, b"LYRICSPATH") {
+		let rel_path = std::str::from_utf8(rel_path).map_err(|source| {
+			SmPackageError::InvalidAssetPathUtf8 {
+				tag: "LYRICSPATH",
+				source,
+			}
+		})?;
+		ensure_asset(bb, chart_dir, cache, rel_path, &[])?;
+	}
+
 	Ok(())
 }
 
@@ -122,14 +142,35 @@ mod tests {
 	}
 
 	#[test]
-	fn rejects_non_unicode_files() {
-		let raw = b"#TITLE:\x80;\n#MUSIC:song.ogg;\n";
+	fn accepts_non_utf8_outside_selected_asset_paths() {
+		let raw = b"#TITLE:\x80;\n#MUSIC:\x80.ogg;\n#REALMUSIC:song.ogg;\n";
+		let chart_path = Path::new("test.sm");
+		let cache = no_cache();
+		let mut bb = crate::base::from_bytes(raw, chart_path, &cache).unwrap();
+
+		resolve_assets(&mut bb, chart_path, &cache).unwrap();
+
+		assert_eq!(
+			cache.missing_asset_paths(),
+			vec![backbeat_core::AssetPath::from_path("song.ogg").unwrap()]
+		);
+	}
+
+	#[test]
+	fn rejects_non_utf8_real_asset_paths() {
+		let raw = b"#MUSIC:song.ogg;\n#REALMUSIC:\x80.ogg;\n";
 		let chart_path = Path::new("test.sm");
 		let cache = no_cache();
 		let mut bb = crate::base::from_bytes(raw, chart_path, &cache).unwrap();
 
 		let error = resolve_assets(&mut bb, chart_path, &cache).unwrap_err();
 
-		assert!(matches!(error, SmPackageError::InvalidFileUtf8(_)));
+		assert!(matches!(
+			error,
+			SmPackageError::InvalidAssetPathUtf8 {
+				tag: "REALMUSIC",
+				..
+			}
+		));
 	}
 }
