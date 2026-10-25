@@ -3,6 +3,7 @@
 pub(crate) mod bms;
 pub(crate) mod bmson;
 pub(crate) mod dwi;
+pub(crate) mod ksf;
 pub(crate) mod ksh;
 pub(crate) mod kson;
 pub(crate) mod sm;

@@ -8,6 +8,7 @@ pub(crate) enum RecognisedFormat {
 	Bmson,
 	Ksh,
 	Kson,
+	Ksf,
 	Ssc,
 	Dwi,
 }
@@ -23,6 +24,7 @@ impl RecognisedFormat {
 			Self::Bmson => "bmson",
 			Self::Ksh => "ksh",
 			Self::Kson => "kson",
+			Self::Ksf => "ksf",
 			Self::Ssc => "ssc",
 			Self::Dwi => "dwi",
 		}
@@ -39,6 +41,7 @@ impl RecognisedFormat {
 			"bmson" => Some(Self::Bmson),
 			"ksh" => Some(Self::Ksh),
 			"kson" => Some(Self::Kson),
+			"ksf" => Some(Self::Ksf),
 			"ssc" => Some(Self::Ssc),
 			"dwi" => Some(Self::Dwi),
 			_ => None,

@@ -21,5 +21,6 @@ pub(crate) fn infer(chart: &ParsedChart) -> RecognisedGamemode {
 		},
 		ParsedChart::Ksh(chart) => ksh::gamemode(chart),
 		ParsedChart::Kson(chart) => kson::gamemode(chart),
+		ParsedChart::Ksf(chart) => sm::from_steps_type(&chart.chart_data.steps_type),
 	}
 }

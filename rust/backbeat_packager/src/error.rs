@@ -2,7 +2,7 @@
 
 use backbeat_inspector::InspectError;
 
-use crate::format::{bms, bmson, dwi, ksm, sm, ssc};
+use crate::format::{bms, bmson, dwi, ksf, ksm, sm, ssc};
 
 /// Error building a [`backbeat_core::BackbeatFile`]
 #[derive(Debug, thiserror::Error)]
@@ -63,6 +63,9 @@ pub enum PackageError {
 
 	#[error(transparent)]
 	Ksm(#[from] ksm::KsmPackageError),
+
+	#[error(transparent)]
+	Ksf(#[from] ksf::KsfPackageError),
 
 	#[error(transparent)]
 	Fracture(#[from] crate::fracturing::FractureError),

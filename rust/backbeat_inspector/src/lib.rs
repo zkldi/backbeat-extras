@@ -106,6 +106,7 @@ fn extract(chart: &ParsedChart, filename: &ChartFilename) -> ChartExtract {
 		ParsedChart::Dwi(chart) => extract::dwi::extract(chart),
 		ParsedChart::Ksh(chart) => extract::ksh::extract(chart, filename),
 		ParsedChart::Kson(chart) => extract::kson::extract(chart),
+		ParsedChart::Ksf(chart) => extract::ksf::extract(chart),
 	}
 }
 

@@ -10,6 +10,7 @@ use crate::util::safe_extension;
 pub(crate) mod bms;
 pub(crate) mod bmson;
 pub(crate) mod dwi;
+pub(crate) mod ksf;
 pub(crate) mod ksm;
 pub(crate) mod sm;
 pub mod sm_enrich;
@@ -31,6 +32,7 @@ pub(crate) enum Format {
 	Bmson,
 	Ksh,
 	Kson,
+	Ksf,
 	Ssc,
 	Dwi,
 }
@@ -47,6 +49,7 @@ impl Format {
 			Self::Bmson => "bmson",
 			Self::Ksh => "ksh",
 			Self::Kson => "kson",
+			Self::Ksf => "ksf",
 			Self::Ssc => "ssc",
 			Self::Dwi => "dwi",
 		}
@@ -69,7 +72,7 @@ impl Format {
 			| Self::Bmson
 			| Self::Ksh
 			| Self::Kson => 5,
-			Self::Sm | Self::Ssc | Self::Dwi => 1,
+			Self::Sm | Self::Ssc | Self::Dwi | Self::Ksf => 1,
 		}
 	}
 
@@ -84,7 +87,8 @@ impl Format {
 			| Self::Pms
 			| Self::Bmson
 			| Self::Ksh
-			| Self::Kson => false,
+			| Self::Kson
+			| Self::Ksf => false,
 			Self::Sm | Self::Ssc | Self::Dwi => true,
 		}
 	}
@@ -98,7 +102,8 @@ impl Format {
 			| Self::Pms
 			| Self::Bmson
 			| Self::Ksh
-			| Self::Kson => false,
+			| Self::Kson
+			| Self::Ksf => false,
 		}
 	}
 
@@ -113,7 +118,8 @@ impl Format {
 			| Self::Pms
 			| Self::Bmson
 			| Self::Ksh
-			| Self::Kson => Err(FractureError::UnsupportedFormat(self.as_str().to_owned())),
+			| Self::Kson
+			| Self::Ksf => Err(FractureError::UnsupportedFormat(self.as_str().to_owned())),
 		}
 	}
 
@@ -128,7 +134,8 @@ impl Format {
 			| Self::Pms
 			| Self::Bmson
 			| Self::Ksh
-			| Self::Kson => Err(MeldError::UnsupportedFormat(self.as_str().to_owned())),
+			| Self::Kson
+			| Self::Ksf => Err(MeldError::UnsupportedFormat(self.as_str().to_owned())),
 		}
 	}
 
@@ -146,6 +153,7 @@ impl Format {
 			Self::Bmson => bmson::resolve_assets(bb, path, cache)?,
 			Self::Ksh => ksm::resolve_assets_ksh(bb, path, cache)?,
 			Self::Kson => ksm::resolve_assets_kson(bb, path, cache)?,
+			Self::Ksf => ksf::resolve_assets(bb, path, cache)?,
 		}
 		Ok(())
 	}
@@ -160,6 +168,7 @@ impl Format {
 			"bmson" => Some(Self::Bmson),
 			"ksh" => Some(Self::Ksh),
 			"kson" => Some(Self::Kson),
+			"ksf" => Some(Self::Ksf),
 			"ssc" => Some(Self::Ssc),
 			"dwi" => Some(Self::Dwi),
 			_ => None,

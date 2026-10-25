@@ -25,7 +25,19 @@ interface Discovery {
 	paths: string[];
 }
 
-const extensions = ["sm", "ssc", "dwi", "bms", "bme", "bml", "pms", "bmson", "ksh", "kson"];
+const extensions = [
+	"sm",
+	"ssc",
+	"dwi",
+	"ksf",
+	"bms",
+	"bme",
+	"bml",
+	"pms",
+	"bmson",
+	"ksh",
+	"kson",
+];
 const basename = (path: string) => path.split(/[\\/]/u).pop() ?? path;
 
 export function App() {

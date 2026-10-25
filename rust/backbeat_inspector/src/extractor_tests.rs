@@ -136,6 +136,29 @@ fn dwi_uses_chart_metadata_in_descriptions() {
 }
 
 #[test]
+fn ksf_song_chart_and_asset_fields() {
+	let bytes = b"#TITLE:Example Artist - Example Song - Crazy;\n\
+		#MUSICINTRO:12.500;\n\
+		#SONGFILE:song.ogg;\n\
+		#DISCFILE:disc.bmp;\n\
+		#TITLEFILE:back.bmp;\n\
+		#DIFFICULTY:13;\n\
+		#STEP:\n1000000000000\n2222222222222";
+	let chart_filename = filename("crazy_1.ksf");
+	let chart = ParsedChart::parse(bytes, &chart_filename).unwrap();
+	let e = extract(&chart, &chart_filename);
+	assert_eq!(e.song.title.as_deref(), Some("Example Song"));
+	assert_eq!(e.song.artist.as_deref(), Some("Example Artist"));
+	assert_eq!(e.song.preview, Some(12_500));
+	assert_eq!(e.assets.music.as_deref(), Some("song.ogg"));
+	assert_eq!(e.assets.banner.as_deref(), Some("disc.bmp"));
+	assert_eq!(e.assets.background.as_deref(), Some("back.bmp"));
+	assert_eq!(e.chart.difficulty_label.as_deref(), Some("Hard"));
+	assert_eq!(e.chart.level.as_deref(), Some("13"));
+	assert_eq!(e.chart.chart_name.as_deref(), Some("crazy_1"));
+}
+
+#[test]
 fn bms_has_no_music_uses_raw_image_tags() {
 	let bytes = b"#TITLE song\n#ARTIST artist\n#BANNER bn.png\n#BACKBMP bg.bmp\n#STAGEFILE load.png\n#PLAYLEVEL 12\n#SUBARTIST charter\n";
 	let e = extract(&parse("bms", bytes), &filename("chart.bms"));

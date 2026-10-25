@@ -19,7 +19,7 @@ fn patterns() -> &'static RegexSet {
 			// Other charts shouldn't be included in the dependency list.
 			r"(?i)\.(bms|bme|bml|pms)$",
 			r"(?i)\.bmson$",
-			r"(?i)\.(sm|ssc|dwi)$",
+			r"(?i)\.(sm|ssc|dwi|ksf)$",
 			r"(?i)\.osu$",
 			r"(?i)\.(ksh|kson|kshl|oldksh)$",
 			r"(?i)\.dtx$",
@@ -58,6 +58,7 @@ mod tests {
 		assert!(should_ignore_file("song.pms"));
 		assert!(should_ignore_file("song.bmson"));
 		assert!(should_ignore_file("song.sm"));
+		assert!(should_ignore_file("song.ksf"));
 		assert!(should_ignore_file("song.ksh"));
 		assert!(should_ignore_file("song.kson"));
 		assert!(should_ignore_file("song.kshl"));

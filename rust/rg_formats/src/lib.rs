@@ -45,6 +45,8 @@ pub mod clone_hero_chart;
 pub mod dtx;
 pub mod dwi;
 #[allow(missing_docs)]
+pub mod ksf;
+#[allow(missing_docs)]
 pub mod ksh;
 pub mod kson;
 pub mod sm;

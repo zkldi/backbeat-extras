@@ -15,6 +15,7 @@ pub(crate) enum ParsedChart {
 	Dwi(Box<rg_formats::sm::Chart>),
 	Ksh(Box<rg_formats::ksh::Chart>),
 	Kson(Box<rg_formats::kson::Kson>),
+	Ksf(Box<rg_formats::ksf::Chart>),
 }
 
 impl ParsedChart {
@@ -71,6 +72,10 @@ impl ParsedChart {
 				)),
 				RecognisedFormat::Kson => Self::Kson(Box::new(
 					rg_formats::kson::from_bytes(bytes).map_err(|e| e.to_string())?,
+				)),
+				RecognisedFormat::Ksf => Self::Ksf(Box::new(
+					rg_formats::ksf::from_bytes(bytes, fname.as_str())
+						.map_err(|e| e.to_string())?,
 				)),
 			},
 		)

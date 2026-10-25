@@ -101,6 +101,7 @@ mod tests {
 		assert_eq!(Format::Sm.max_allowed_up_pathing(), 1);
 		assert_eq!(Format::Ssc.max_allowed_up_pathing(), 1);
 		assert_eq!(Format::Dwi.max_allowed_up_pathing(), 1);
+		assert_eq!(Format::Ksf.max_allowed_up_pathing(), 1);
 		assert_eq!(Format::Bmson.max_allowed_up_pathing(), 5);
 		assert_eq!(Format::Ksh.max_allowed_up_pathing(), 5);
 		assert_eq!(Format::Kson.max_allowed_up_pathing(), 5);
