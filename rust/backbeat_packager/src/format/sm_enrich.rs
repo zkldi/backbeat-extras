@@ -384,6 +384,20 @@ mod tests {
 	}
 
 	#[test]
+	fn enriches_and_packages_unknown_sm_difficulty() {
+		let temp = tempfile::TempDir::new().unwrap();
+		let path = temp.path().join("song.sm");
+		let bytes = b"#TITLE:Song;\n#NOTES:dance-single:Author:insane:19:0:1000;\n";
+		fs::write(&path, bytes).unwrap();
+		let enriched = enrich_sm_file(&path).unwrap();
+		let text = String::from_utf8(enriched).unwrap();
+		assert!(text.contains("#BKBENRICHED:v1;"));
+		let msd = sm_msd::from_bytes(text.as_bytes());
+		assert_eq!(&*msd.all_with_tag("NOTES")[0].values[2], b"insane");
+		assert_eq!(crate::package(&path).unwrap().len(), 1);
+	}
+
+	#[test]
 	fn preserves_existing_culture_tag() {
 		let path = Path::new("song.sm");
 		let bytes = b"#TITLE:Song;\n#CULTURE:pad;\n#NOTES:dance-single:Author:Hard:10:0:0000;\n";

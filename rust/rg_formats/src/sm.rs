@@ -764,6 +764,7 @@ fn parse_notes(el: &MsdElement) -> Result<ChartData, LoadError> {
 
 	let author = &fields[1];
 	let diff = &fields[2];
+	let level = String::from_utf8_lossy(&fields[3]).parse().unwrap_or(1);
 
 	let difficulty = match diff.to_ascii_lowercase().as_slice() {
 		b"beginner" => Difficulty::Beginner,
@@ -772,15 +773,23 @@ fn parse_notes(el: &MsdElement) -> Result<ChartData, LoadError> {
 		b"hard" | b"ssr" | b"maniac" | b"heavy" => Difficulty::Hard,
 		b"challenge" | b"expert" | b"oni" => Difficulty::Challenge,
 		b"edit" => Difficulty::Edit(author.clone()),
-		d => {
-			return Err(LoadError::InvalidSM(format!(
-				"Unknown difficulty {}",
-				String::from_utf8_lossy(d),
-			)));
-		}
+		// Match StepMania's Steps::TidyUpData: try the description as a canonical
+		// difficulty name, then infer the difficulty from the numeric meter.
+		_ => match author.trim_ascii().to_ascii_lowercase().as_slice() {
+			b"beginner" => Difficulty::Beginner,
+			b"easy" => Difficulty::Easy,
+			b"medium" => Difficulty::Medium,
+			b"hard" => Difficulty::Hard,
+			b"challenge" => Difficulty::Challenge,
+			b"edit" => Difficulty::Edit(author.clone()),
+			_ => match level {
+				1 => Difficulty::Beginner,
+				0..=3 => Difficulty::Easy,
+				4..=6 => Difficulty::Medium,
+				_ => Difficulty::Hard,
+			},
+		},
 	};
-
-	let level = String::from_utf8_lossy(&fields[3]).parse().unwrap_or(1);
 
 	let raw_notedata = &fields[5];
 
@@ -840,6 +849,41 @@ mod tests {
 				offset_beats: 0.0
 			}])
 		);
+	}
+
+	#[test]
+	fn unknown_difficulty_falls_back_to_description_then_meter() {
+		for (description, difficulty, meter, expected) in [
+			("Author", "insane", "1", Difficulty::Beginner),
+			("Author", "insane", "2", Difficulty::Easy),
+			("Author", "insane", "3", Difficulty::Easy),
+			("Author", "insane", "4", Difficulty::Medium),
+			("Author", "insane", "6", Difficulty::Medium),
+			("Author", "insane", "7", Difficulty::Hard),
+			("Author", "insane", "19", Difficulty::Hard),
+			("Author", "", "", Difficulty::Beginner),
+			("Author", "insane", "0", Difficulty::Easy),
+			("bEgInNeR", "insane", "19", Difficulty::Beginner),
+			("Easy", "insane", "19", Difficulty::Easy),
+			("Medium", "insane", "19", Difficulty::Medium),
+			("Hard", "insane", "1", Difficulty::Hard),
+			("Challenge", "insane", "1", Difficulty::Challenge),
+			(
+				"Edit",
+				"insane",
+				"1",
+				Difficulty::Edit(b"Edit".to_vec().into()),
+			),
+			// Description fallback only recognizes canonical names, not old aliases.
+			("expert", "insane", "2", Difficulty::Easy),
+			// Recognized difficulty names still take precedence over the description.
+			("Easy", "expert", "1", Difficulty::Challenge),
+		] {
+			let bytes = format!("#NOTES:dance-single:{description}:{difficulty}:{meter}:0:1000;");
+			let msd = sm_msd::from_bytes(bytes.as_bytes());
+			let chart = parse_notes(msd.all_with_tag("NOTES")[0]).unwrap();
+			assert_eq!(chart.difficulty, expected, "{bytes}");
+		}
 	}
 
 	#[test]
